@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# C++ build files
+*.o
+*.obj
+*.out
+*.exe
+*.dSYM/
+
+# Build directories
+build/
+out/
+
+# VS Code settings
+.vscode/
