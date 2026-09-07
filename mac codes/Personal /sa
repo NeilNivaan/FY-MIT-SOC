@@ -1,0 +1,1405 @@
+import React, { useState, useEffect, useMemo, useReducer, useRef } from "react";
+import {
+LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from "recharts";
+import {
+LayoutDashboard, Package, ShoppingCart, ClipboardList, Wallet, User,
+Building2, Bell, Search, Filter, Plus, Minus, X, ChevronRight, ChevronLeft,
+Check, XCircle, AlertTriangle, Download, LogOut, Menu, Truck, CheckCircle2,
+Clock, PackageCheck, ShieldCheck, TrendingUp, Users, FileText, Settings,
+BarChart3, Phone, Mail, MapPin, Info, Eye, EyeOff, ArrowUpRight, ArrowDownRight
+} from "lucide-react";
+
+/* =========================================================================
+DESIGN TOKENS
+========================================================================= */
+const T = {
+ink: "#0B2540",
+inkSoft: "#132F4C",
+blue: "#1868B7",
+blueDeep: "#0E4C8A",
+base: "#F5F7FA",
+surface: "#FFFFFF",
+line: "#E3E8EF",
+text: "#0F172A",
+muted: "#5B6B82",
+faint: "#8996A8",
+green: "#1F8A55",
+greenBg: "#E9F6EF",
+amber: "#B7791F",
+amberBg: "#FBF1E1",
+red: "#B3261E",
+redBg: "#FCEAE9",
+violet: "#5B4EE0",
+violetBg: "#EEECFC",
+};
+
+const fontLink =
+"https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap";
+
+/* =========================================================================
+MOCK DATA
+========================================================================= */
+const CATEGORIES = ["Lubricants", "Filters", "Brake Systems", "Electricals", "Body Parts", "Accessories"];
+
+const PRODUCTS = [
+{ id: "P001", sku: "BMV-LUB-1001", name: "Synth-Grade Engine Oil 5W-30", category: "Lubricants", unit: "5L can", price: 3450, stock: 240, img: "oil-can" },
+{ id: "P002", sku: "BMV-LUB-1002", name: "Synth-Grade Engine Oil 10W-40", category: "Lubricants", unit: "5L can", price: 3120, stock: 180, img: "oil-can" },
+{ id: "P003", sku: "BMV-LUB-1010", name: "Gear Oil GL-5 80W-90", category: "Lubricants", unit: "1L bottle", price: 480, stock: 520, img: "oil-bottle" },
+{ id: "P004", sku: "BMV-FLT-2001", name: "Oil Filter — Standard", category: "Filters", unit: "unit", price: 210, stock: 900, img: "filter" },
+{ id: "P005", sku: "BMV-FLT-2002", name: "Air Filter — Panel Type", category: "Filters", unit: "unit", price: 340, stock: 610, img: "filter" },
+{ id: "P006", sku: "BMV-FLT-2003", name: "Cabin Filter — Activated Carbon", category: "Filters", unit: "unit", price: 390, stock: 305, img: "filter" },
+{ id: "P007", sku: "BMV-BRK-3001", name: "Brake Pad Set — Front", category: "Brake Systems", unit: "set", price: 1650, stock: 140, img: "brake" },
+{ id: "P008", sku: "BMV-BRK-3002", name: "Brake Pad Set — Rear", category: "Brake Systems", unit: "set", price: 1420, stock: 132, img: "brake" },
+{ id: "P009", sku: "BMV-BRK-3010", name: "Brake Fluid DOT 4", category: "Brake Systems", unit: "500ml", price: 260, stock: 400, img: "fluid" },
+{ id: "P010", sku: "BMV-ELE-4001", name: "12V Maintenance-Free Battery 45Ah", category: "Electricals", unit: "unit", price: 5200, stock: 60, img: "battery" },
+{ id: "P011", sku: "BMV-ELE-4002", name: "Alternator Belt", category: "Electricals", unit: "unit", price: 620, stock: 230, img: "belt" },
+{ id: "P012", sku: "BMV-ELE-4010", name: "Spark Plug Set (4pc)", category: "Electricals", unit: "set", price: 890, stock: 275, img: "spark" },
+{ id: "P013", sku: "BMV-BDY-5001", name: "Side Mirror Assembly — LH", category: "Body Parts", unit: "unit", price: 1980, stock: 45, img: "mirror" },
+{ id: "P014", sku: "BMV-BDY-5002", name: "Side Mirror Assembly — RH", category: "Body Parts", unit: "unit", price: 1980, stock: 44, img: "mirror" },
+{ id: "P015", sku: "BMV-BDY-5010", name: "Front Bumper Guard", category: "Body Parts", unit: "unit", price: 2650, stock: 22, img: "bumper" },
+{ id: "P016", sku: "BMV-ACC-6001", name: "Floor Mat Set — Rubber", category: "Accessories", unit: "set", price: 1150, stock: 190, img: "mat" },
+{ id: "P017", sku: "BMV-ACC-6002", name: "Seat Cover Set — Fabric", category: "Accessories", unit: "set", price: 2450, stock: 88, img: "seat" },
+{ id: "P018", sku: "BMV-ACC-6010", name: "Wiper Blade Pair 21"", category: "Accessories", unit: "pair", price: 540, stock: 310, img: "wiper" },
+{ id: "P019", sku: "BMV-LUB-1020", name: "Coolant — Long Life Green", category: "Lubricants", unit: "1L bottle", price: 320, stock: 0, img: "fluid" },
+{ id: "P020", sku: "BMV-FLT-2020", name: "Fuel Filter — Diesel", category: "Filters", unit: "unit", price: 470, stock: 165, img: "filter" },
+{ id: "P021", sku: "BMV-BRK-3020", name: "Disc Rotor — Front", category: "Brake Systems", unit: "unit", price: 2380, stock: 58, img: "brake" },
+{ id: "P022", sku: "BMV-ELE-4020", name: "Headlamp Assembly — LH", category: "Electricals", unit: "unit", price: 3150, stock: 30, img: "mirror" },
+];
+
+const ICONS = {
+"oil-can": "🛢️", "oil-bottle": "🧴", filter: "🔧", brake: "🛑", fluid: "💧",
+battery: "🔋", belt: "⚙️", spark: "✨", mirror: "🪞", bumper: "🚗",
+mat: "🧵", seat: "💺", wiper: "🌧️",
+};
+
+function makeDealers() {
+const raw = [
+{ code: "DLR-1042", name: "Shivam Auto Traders", contact: "Ramesh Shivam", city: "Pune", state: "Maharashtra", limit: 500000, out: 350000 },
+{ code: "DLR-1078", name: "Kalyan Motor Spares", contact: "Kalyan Iyer", city: "Coimbatore", state: "Tamil Nadu", limit: 300000, out: 285000 },
+{ code: "DLR-1093", name: "National Auto Parts Co.", contact: "Firoz Sheikh", city: "Ahmedabad", state: "Gujarat", limit: 800000, out: 210000 },
+{ code: "DLR-1114", name: "Everest Automotives", contact: "Tenzin Norbu", city: "Siliguri", state: "West Bengal", limit: 250000, out: 40000 },
+{ code: "DLR-1129", name: "Sundaram Spares Depot", contact: "S. Sundaram", city: "Madurai", state: "Tamil Nadu", limit: 400000, out: 398500 },
+{ code: "DLR-1156", name: "Om Sai Auto House", contact: "Priya Deshpande", city: "Nagpur", state: "Maharashtra", limit: 350000, out: 120000 },
+{ code: "DLR-1172", name: "Capital Motor Traders", contact: "Anil Kapoor", city: "Lucknow", state: "Uttar Pradesh", limit: 600000, out: 610000 },
+];
+return raw.map((d, i) => ({
+id: dealer-${i + 1}, ...d, gst:27ABCDE${1000 + i}F1Z${i}, phone:+91 98${(20000000 + i * 137).toString().slice(0, 8)},
+email: ${d.name.split(" ")[0].toLowerCase()}@example.com, address:Plot ${12 + i}, Industrial Area, ${d.city}, pincode:4${10000 + i * 33},
+status: "Active",
+}));
+}
+const DEALERS = makeDealers();
+
+const STATUS_META = {
+"Pending Approval": { color: T.amber, bg: T.amberBg, icon: Clock },
+"Approved": { color: T.green, bg: T.greenBg, icon: Check },
+"Confirmed": { color: T.violet, bg: T.violetBg, icon: PackageCheck },
+"Dispatched": { color: T.blue, bg: "#E7F0FA", icon: Truck },
+"Delivered": { color: T.green, bg: T.greenBg, icon: CheckCircle2 },
+"Rejected": { color: T.red, bg: T.redBg, icon: XCircle },
+"Blocked": { color: T.red, bg: T.redBg, icon: AlertTriangle },
+};
+
+function seedOrders() {
+const items = [];
+let n = 1;
+const push = (dealerId, statuses, daysAgo) => {
+const numItems = 1 + Math.floor(Math.random() * 3);
+const picked = [];
+let subtotal = 0;
+for (let i = 0; i < numItems; i++) {
+const p = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+const qty = 2 + Math.floor(Math.random() * 8);
+picked.push({ productId: p.id, name: p.name, sku: p.sku, qty, unitPrice: p.price, total: p.price * qty });
+subtotal += p.price * qty;
+}
+const tax = Math.round(subtotal * 0.18);
+const total = subtotal + tax;
+const id = BMW-ORD-${String(100 + n).padStart(6, "0")}`;
+n++;
+const date = new Date(Date.now() - daysAgo * 864e5).toISOString();
+items.push({
+id, dealerId, items: picked, subtotal, tax, total,
+status: statuses, date, rejectionReason: null,
+});
+};
+DEALERS.forEach((d, idx) => {
+push(d.id, "Delivered", 22 - idx);
+push(d.id, "Dispatched", 9);
+push(d.id, idx % 3 === 0 ? "Pending Approval" : "Confirmed", 3);
+});
+push(DEALERS[0].id, "Rejected", 15);
+return items.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function seedLedger(dealerId, outstanding) {
+const entries = [];
+let balance = 0;
+const base = outstanding * 0.4;
+entries.push({ date: daysAgoISO(60), desc: "Opening balance carried forward", debit: base, credit: 0 });
+balance += base;
+for (let i = 0; i < 5; i++) {
+const debit = Math.round(15000 + Math.random() * 60000);
+entries.push({ date: daysAgoISO(50 - i * 9), desc: Invoice — Order dispatched, debit, credit: 0 });
+balance += debit;
+if (i % 2 === 0) {
+const credit = Math.round(debit * 0.6);
+entries.push({ date: daysAgoISO(48 - i * 9), desc: "Payment received — NEFT", debit: 0, credit });
+balance -= credit;
+}
+}
+const adjust = outstanding - balance;
+entries.push({ date: daysAgoISO(2), desc: "Balance adjustment", debit: adjust > 0 ? adjust : 0, credit: adjust < 0 ? -adjust : 0 });
+balance = outstanding;
+let running = 0;
+return entries.map((e) => {
+running += e.debit - e.credit;
+return { ...e, balance: running };
+});
+}
+function daysAgoISO(d) { return new Date(Date.now() - d * 864e5).toISOString(); }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }); }
+function inr(n) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+
+/* =========================================================================
+MOCK SERVICE LAYER
+In a real deployment these become HTTP calls to an authenticated backend.
+The credit check specifically is written as a pure, isolated function so
+it can be lifted verbatim into a server-side handler — the UI never
+trusts a client-computed "available credit" to decide the outcome.
+========================================================================= */
+function serverSideCreditCheck(dealer, orderTotal) {
+// Re-reads authoritative dealer.outstanding + dealer.limit — never a
+// value carried from the browser's earlier render.
+const availableCredit = dealer.limit - dealer.out;
+const exposure = dealer.out + orderTotal;
+const withinLimit = exposure <= dealer.limit;
+return {
+withinLimit,
+creditLimit: dealer.limit,
+currentOutstanding: dealer.out,
+orderValue: orderTotal,
+availableCredit,
+totalExposure: exposure,
+amountExceeded: withinLimit ? 0 : exposure - dealer.limit,
+};
+}
+
+/* =========================================================================
+GLOBAL STORE (simulates a shared backend via useReducer)
+========================================================================= */
+function storeReducer(state, action) {
+switch (action.type) {
+case "PLACE_ORDER": {
+const { order } = action;
+const dealers = state.dealers.map((d) =>
+d.id === order.dealerId ? d : d
+);
+return {
+...state,
+orders: [order, ...state.orders],
+notifications: [
+{ id: cryptoId(), audience: "admin", title: "New order received", body: ${order.id} needs approval`, read: false, date: new Date().toISOString() }, { id: cryptoId(), audience: order.dealerId, title: "Order placed", body: `$`{order.id} sent for approval`, read: false, date: new Date().toISOString() }, ...state.notifications, ], }; } case "APPROVE_ORDER": { const order = state.orders.find((o) => o.id === action.orderId); const dealers = state.dealers.map((d) => d.id === order.dealerId ? { ...d, out: d.out + order.total } : d ); const orders = state.orders.map((o) => o.id === action.orderId ? { ...o, status: "Approved" } : o ); return { ...state, dealers, orders, ledger: { ...state.ledger, [order.dealerId]: [ { date: new Date().toISOString(), desc: `Invoice — `${order.id}`, debit: order.total, credit: 0, balance: 0 }, ...(state.ledger[order.dealerId] || []), ].map((e, i, arr) => recompute(arr)), }, notifications: [ { id: cryptoId(), audience: order.dealerId, title: "Order approved", body: `$`{order.id} has been approved`, read: false, date: new Date().toISOString() }, ...state.notifications, ], }; } case "REJECT_ORDER": { const orders = state.orders.map((o) => o.id === action.orderId ? { ...o, status: "Rejected", rejectionReason: action.reason || "Not specified" } : o ); const order = state.orders.find((o) => o.id === action.orderId); return { ...state, orders, notifications: [ { id: cryptoId(), audience: order.dealerId, title: "Order rejected", body:${order.id}: latex
+{action.reason || "See admin for details"}`, read: false, date: new Date().toISOString() }, ...state.notifications, ], }; } case "ADVANCE_STATUS": { const flow = ["Approved", "Confirmed", "Dispatched", "Delivered"]; const orders = state.orders.map((o) => { if (o.id !== action.orderId) return o; const idx = flow.indexOf(o.status); const next = flow[Math.min(idx + 1, flow.length - 1)]; return { ...o, status: next }; }); const order = orders.find((o) => o.id === action.orderId); return { ...state, orders, notifications: [ { id: cryptoId(), audience: order.dealerId, title: `Order 
+
+{order.status.toLowerCase()}, body:{order.status.toLowerCase()}`, read: false, date: new Date().toISOString() },
+...state.notifications,
+],
+};
+}
+case "MARK_READ": {
+return { ...state, notifications: state.notifications.map((n) => n.id === action.id ? { ...n, read: true } : n) };
+}
+default:
+return state;
+}
+}
+function recompute(arr) {
+// recompute running balances top-down (array is newest-first)
+const chron = [...arr].reverse();
+let running = 0;
+const withBal = chron.map((e) => { running += e.debit - e.credit; return { ...e, balance: running }; });
+return withBal.reverse()[arr.indexOf(arr[0])] || arr[0];
+}
+function cryptoId() { return Math.random().toString(36).slice(2, 10); }
+
+function initStore() {
+const ledger = {};
+DEALERS.forEach((d) => { ledger[d.id] = seedLedger(d.id, d.out); });
+return {
+dealers: DEALERS,
+orders: seedOrders(),
+ledger,
+notifications: [],
+};
+}
+
+/* =========================================================================
+SHARED UI PRIMITIVES
+========================================================================= */
+function GlobalStyle() {
+return (
+
+);
+}
+
+function StatusBadge({ status }) {
+const meta = STATUS_META[status] || STATUS_META["Pending Approval"];
+const Icon = meta.icon;
+return (
+display: "inline-flex", alignItems: "center", gap: 5,
+padding: "4px 9px", borderRadius: 20, fontSize: 12.5, fontWeight: 600,
+color: meta.color, background: meta.bg, whiteSpace: "nowrap",
+}}>
+
+{status}
+
+);
+}
+
+function Button({ children, variant = "primary", size = "md", icon: Icon, onClick, disabled, style, type = "button", full }) {
+const sizes = { sm: "7px 12px", md: "10px 16px", lg: "13px 20px" };
+const base = {
+display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+padding: sizes[size], borderRadius: 9, fontWeight: 600,
+fontSize: size === "sm" ? 13 : 14.5, width: full ? "100%" : undefined,
+};
+const variants = {
+primary: { background: T.blue, color: "#fff" },
+dark: { background: T.ink, color: "#fff" },
+outline: { background: "#fff", color: T.ink, border: 1px solid${T.line}` },
+ghost: { background: "transparent", color: T.muted },
+danger: { background: T.red, color: "#fff" },
+subtle: { background: T.base, color: T.ink },
+};
+return (
+style={{ ...base, ...variants[variant], ...style }}
+onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.filter = "brightness(0.94)"; }}
+onMouseLeave={(e) => { e.currentTarget.style.filter = "none"; }}>
+{Icon && }
+{children}
+
+);
+}
+
+function Card({ children, style, hover, accent }) {
+return (
+background: T.surface, border: 1px solid ${T.line}, borderRadius: 14, borderLeft: accent ?3px solid ${accent} : 1px solid ${T.line}`,
+...style,
+}}>
+{children}
+
+);
+}
+
+function Field({ label, children }) {
+return (
+
+{label}
+{children}
+
+);
+}
+const inputStyle = {
+width: "100%", padding: "10px 12px", borderRadius: 8, border: 1px solid${T.line}`,
+fontSize: 14.5, fontFamily: "inherit", background: "#fff", color: T.text,
+};
+
+function Modal({ title, onClose, children, width = 480 }) {
+return (
+position: "fixed", inset: 0, background: "rgba(11,37,64,.45)", zIndex: 200,
+display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+}} onClick={onClose}>
+background: "#fff", borderRadius: 16, width: "100%", maxWidth: width,
+maxHeight: "88vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+}} onClick={(e) => e.stopPropagation()}>
+position: "sticky", top: 0, background: "#fff", zIndex: 1,
+display: "flex", alignItems: "center", justifyContent: "space-between",
+padding: "18px 22px", borderBottom: 1px solid ${T.line}`,
+}}>
+{title}
+
+
+
+
+
+
+{children}
+
+
+
+);
+}
+
+function EmptyState({ icon: Icon, title, body }) {
+return (
+
+width: 52, height: 52, borderRadius: 14, background: T.base, display: "flex",
+alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+}}>
+
+{title}
+
+{body}
+
+
+);
+}
+
+function ProductThumb({ img, size = 44 }) {
+return (
+width: size, height: size, borderRadius: 10, background: T.base,
+display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, flexShrink: 0,
+}}>{ICONS[img] || "📦"}
+
+);
+}
+
+/* =========================================================================
+LOGIN
+========================================================================= */
+function LoginScreen({ onLogin }) {
+const [role, setRole] = useState("dealer");
+const [id, setId] = useState("");
+const [pw, setPw] = useState("");
+const [showPw, setShowPw] = useState(false);
+const [err, setErr] = useState("");
+const [busy, setBusy] = useState(false);
+
+const demoDealer = DEALERS[0];
+
+function submit(e) {
+e.preventDefault();
+setErr("");
+setBusy(true);
+setTimeout(() => {
+setBusy(false);
+if (pw.trim().length < 4) {
+setErr("Password must be at least 4 characters.");
+return;
+}
+if (role === "dealer") {
+// Demo auth: match a known dealer code if possible (tolerant of
+// spacing/case/hyphens), otherwise fall back to the demo dealer so
+// the flow always works for evaluation purposes.
+const norm = (s) => s.trim().toLowerCase().replace(/[\s-]/g, "");
+const typed = norm(id);
+const match = DEALERS.find((d) => norm(d.code) === typed) || demoDealer;
+onLogin({ role: "dealer", dealerId: match.id });
+} else {
+onLogin({ role: "admin" });
+}
+}, 400);
+}
+
+function quickDemo(r) {
+setRole(r);
+setErr("");
+setBusy(true);
+setTimeout(() => {
+setBusy(false);
+onLogin(r === "dealer" ? { role: "dealer", dealerId: demoDealer.id } : { role: "admin" });
+}, 300);
+}
+
+return (
+
+flex: 1, background: linear-gradient(160deg,${T.ink}, ${T.blueDeep}),
+color: "#fff", padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "space-between",
+}}>
+
+
+
+
+BMW Ventures
+
+
+
+The dealer platform built around your account position.
+
+
+
+Check available credit, place orders, and track every dispatch — all from one dashboard your team can trust.
+
+
+
+
+1,200+ SKUs7 dealer regionsServer-verified credit checks
+
+
+
+
+
+
+
+
+
+BMW Ventures
+
+
+Sign in
+
+
+Access your dealer or management account.
+
+
+
+
+{["dealer", "admin"].map((r) => (
+{ setRole(r); setErr(""); setId(""); setPw(""); }}
+style={{
+flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 700, fontSize: 13.5,
+background: role === r ? "#fff" : "transparent",
+color: role === r ? T.ink : T.muted,
+boxShadow: role === r ? "0 1px 4px rgba(0,0,0,.08)" : "none",
+}}>
+{r === "dealer" ? "Dealer login" : "Admin portal"}
+
+))}
+
+
+
+
+ setId(e.target.value)}
+placeholder={role === "dealer" ? "e.g. DLR-1042" : "name@bmwventures.in"} />
+
+
+
+value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" />
+setShowPw((s) => !s)} className="bmw-btn"
+style={{ position: "absolute", right: 8, top: 8, background: "none", padding: 4, color: T.faint }}>
+{showPw ? : }
+
+
+
+{err && (
+{err}
+
+)}
+
+e.preventDefault()} style={{ color: T.blue, fontWeight: 600, textDecoration: "none" }}>Forgot password?
+
+
+{busy ? "Signing in…" : "Sign in"}
+
+
+
+
+Demo credentials — {role === "dealer" ? <>{demoDealer.code} / demo123 : <>admin@bmwventures.in / demo123}
+
+quickDemo(role)} disabled={busy}
+style={{
+marginTop: 10, width: "100%", background: "none", border: 1px dashed${T.line}, borderRadius: 9, padding: "10px 0", fontSize: 12.8, fontWeight: 600, color: T.blue, }}> {busy ? "Signing in…" :Skip — continue with demo ${role} account}
+
+
+
+
+);
+}
+
+/* =========================================================================
+NAV SHELL (shared skeleton for dealer + admin)
+========================================================================= */
+function Shell({ brand, navItems, active, onNav, headerRight, children, mobileBottomNav }) {
+return (
+
+width: 232, flexShrink: 0, background: T.ink, color: "#fff",
+display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh",
+}}>
+
+
+
+
+
+BMW Ventures
+
+{brand}
+
+
+
+
+{navItems.map((item) => (
+onNav(item.key)}
+style={{
+display: "flex", alignItems: "center", gap: 11, padding: "10px 12px", borderRadius: 9,
+background: active === item.key ? "rgba(255,255,255,.12)" : "transparent",
+color: active === item.key ? "#fff" : "rgba(255,255,255,.65)",
+fontSize: 13.8, fontWeight: 600, textAlign: "left",
+}}>
+{item.label}
+{item.badge ? (
+{item.badge}
+) : null}
+
+))}
+
+
+onNav("__logout")}
+style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 9, color: "rgba(255,255,255,.65)", width: "100%", fontSize: 13.5, fontWeight: 600, background: "transparent" }}>
+Sign out
+
+
+
+
+
+position: "sticky", top: 0, zIndex: 20, background: "rgba(245,247,250,.92)", backdropFilter: "blur(6px)",
+borderBottom: 1px solid${T.line}`, padding: "14px 20px",
+display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+}}>
+
+BMW Ventures
+
+
+{headerRight}
+
+{children}
+
+
+
+{mobileBottomNav && (
+position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff",
+borderTop: 1px solid ${T.line}`, display: "flex", zIndex: 30,
+paddingBottom: "env(safe-area-inset-bottom)",
+}}>
+{navItems.slice(0, 5).map((item) => (
+onNav(item.key)}
+style={{
+flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+padding: "9px 0 8px", background: "none", color: active === item.key ? T.blue : T.faint, fontSize: 10.5, fontWeight: 600,
+}}>
+{item.label}
+
+))}
+
+)}
+
+);
+}
+
+function NotifBell({ items, onOpen }) {
+const unread = items.filter((n) => !n.read).length;
+return (
+
+
+{unread > 0 && {unread}}
+
+);
+}
+
+function NotifPanel({ items, onClose, onMarkRead }) {
+return (
+
+{items.length === 0 ? : (
+
+{items.map((n) => (
+onMarkRead(n.id)} style={{
+padding: "12px 14px", borderRadius: 10, background: n.read ? "#fff" : T.base, border: 1px solid ${T.line}`, cursor: "pointer",
+}}>
+
+{n.title}
+{!n.read && }
+
+{n.body}
+
+{fmtDate(n.date)}
+
+
+))}
+
+)}
+
+);
+}
+
+/* =========================================================================
+DEALER APP
+========================================================================= */
+function DealerApp({ session, store, dispatch, onLogout }) {
+const dealer = store.dealers.find((d) => d.id === session.dealerId);
+const [tab, setTab] = useState("dashboard");
+const [cart, setCart] = useState([]);
+const [showNotif, setShowNotif] = useState(false);
+const [activeOrder, setActiveOrder] = useState(null);
+const [productModal, setProductModal] = useState(null);
+
+const myOrders = store.orders.filter((o) => o.dealerId === dealer.id);
+const myNotifs = store.notifications.filter((n) => n.audience === dealer.id);
+const available = dealer.limit - dealer.out;
+const pendingCount = myOrders.filter((o) => o.status === "Pending Approval").length;
+
+const cartTotal = cart.reduce((s, c) => s + c.qty * c.price, 0);
+const cartTax = Math.round(cartTotal * 0.18);
+const cartGrand = cartTotal + cartTax;
+
+function addToCart(product, qty) {
+setCart((prev) => {
+const found = prev.find((c) => c.id === product.id);
+if (found) return prev.map((c) => c.id === product.id ? { ...c, qty: c.qty + qty } : c);
+return [...prev, { id: product.id, name: product.name, sku: product.sku, price: product.price, unit: product.unit, qty }];
+});
+}
+function updateQty(id, qty) {
+setCart((prev) => qty <= 0 ? prev.filter((c) => c.id !== id) : prev.map((c) => c.id === id ? { ...c, qty } : c));
+}
+
+const navItems = [
+{ key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+{ key: "catalog", label: "Catalog", icon: Package },
+{ key: "cart", label: "Cart", icon: ShoppingCart, badge: cart.length || null },
+{ key: "orders", label: "Orders", icon: ClipboardList },
+{ key: "ledger", label: "Statement", icon: Wallet },
+{ key: "about", label: "About BMW", icon: Info },
+{ key: "profile", label: "Profile", icon: User },
+];
+
+function handleNav(key) {
+if (key === "__logout") return onLogout();
+setTab(key);
+}
+
+return (
+headerRight={
+
+
+{dealer.name}
+
+{dealer.code}
+
+
+setShowNotif(true)} />
+
+}>
+{showNotif && setShowNotif(false)} onMarkRead={(id) => dispatch({ type: "MARK_READ", id })} />}
+{productModal && (
+setProductModal(null)}
+onAdd={(qty) => { addToCart(productModal, qty); setProductModal(null); }} />
+)}
+{activeOrder && setActiveOrder(null)} />}
+
+{tab === "dashboard" && (
+onGoCatalog={() => setTab("catalog")} onGoOrders={() => setTab("orders")} onGoLedger={() => setTab("ledger")}
+onOpenOrder={setActiveOrder} />
+)}
+{tab === "catalog" && addToCart(p, 1)} onGoCart={() => setTab("cart")} cartCount={cart.length} />}
+{tab === "cart" && (
+dealer={dealer} onGoCatalog={() => setTab("catalog")}
+onPlace={() => {
+const check = serverSideCreditCheck(dealer, cartGrand);
+if (check.withinLimit) {
+const order = {
+id: BMW-ORD-${String(Math.floor(100000 + Math.random() * 899999))}`,
+dealerId: dealer.id,
+items: cart.map((c) => ({ productId: c.id, name: c.name, sku: c.sku, qty: c.qty, unitPrice: c.price, total: c.qty * c.price })),
+subtotal: cartTotal, tax: cartTax, total: cartGrand,
+status: "Pending Approval", date: new Date().toISOString(), rejectionReason: null,
+};
+dispatch({ type: "PLACE_ORDER", order });
+setCart([]);
+setTab("orders");
+}
+return check;
+}} />
+)}
+{tab === "orders" && }
+{tab === "ledger" && }
+{tab === "about" && }
+{tab === "profile" && }
+
+);
+}
+
+function SummaryCard({ label, value, sub, accent, icon: Icon }) {
+return (
+
+
+{label}
+{Icon && }
+
+{value}
+
+{sub &&
+{sub}
+}
+
+);
+}
+
+function DealerDashboard({ dealer, orders, available, pendingCount, onGoCatalog, onGoOrders, onGoLedger, onOpenOrder }) {
+const hour = new Date().getHours();
+const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+const utilPct = Math.min(100, Math.round((dealer.out / dealer.limit) * 100));
+const recents = orders.slice(0, 5);
+
+return (
+
+
+{greeting}, {dealer.contact.split(" ")[0]}
+
+
+{dealer.name} · {dealer.code} · {dealer.city}
+
+
+
+
+
+
+
+0 ? T.green : T.red}
+sub={${utilPct}% utilized`} icon={TrendingUp} />
+
+
+
+{available <= dealer.limit * 0.1 && (
+
+
+
+Your available credit is running low ({inr(available)} left). New orders close to this amount may be blocked until outstanding dues are cleared.
+
+
+)}
+
+
+Place New Order
+View Orders
+View Statement
+
+
+
+
+{o.id}
+{fmtDate(o.date)}
+{inr(o.total)}
+
+
+))}
+
+
+
+)}
+
+
+);
+}
+
+function Catalog({ onOpen, onQuickAdd, onGoCart, cartCount }) {
+const [q, setQ] = useState("");
+const [cat, setCat] = useState("All");
+const [avail, setAvail] = useState("All");
+
+const filtered = PRODUCTS.filter((p) => {
+const matchQ = !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()) || p.category.toLowerCase().includes(q.toLowerCase());
+const matchCat = cat === "All" || p.category === cat;
+const matchAvail = avail === "All" || (avail === "In Stock" ? p.stock > 0 : p.stock === 0);
+return matchQ && matchCat && matchAvail;
+});
+
+return (
+
+
+Product catalog
+
+
+{cartCount > 0 && (
+Cart ({cartCount})
+)}
+
+
+
+
+
+ setQ(e.target.value)} placeholder="Search by name, SKU, or category"
+style={{ ...inputStyle, paddingLeft: 36 }} />
+
+
+
+
+
+{filtered.length === 0 ? (
+
+) : (
+
+{filtered.map((p) => (
+
+onOpen(p)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+
+{p.sku}
+
+
+{p.name}
+
+{p.category} · {p.unit}
+
+
+
+
+
+{inr(p.price)}
+
+0 ? T.green : T.red, fontWeight: 600 }}>
+{p.stock > 0 ? ``${p.stock} in stock` : "Out of stock"}
+
+
+onQuickAdd(p)}>Add
+
+
+))}
+
+)}
+
+);
+}
+
+function ProductModal({ product, onClose, onAdd }) {
+const [qty, setQty] = useState(1);
+const related = PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
+return (
+
+
+
+{ICONS[product.img] || "📦"}
+
+
+{product.sku}
+
+{product.name}
+
+
+{product.category} · {product.unit}
+
+{inr(product.price)}
+
+
+
+
+Genuine BMW Ventures-distributed part. Supplied with standard manufacturer warranty and quality certification. Bulk pricing available for orders above dealer-tier thresholds — contact your account manager for volume rates.
+
+
+0 ? T.green : T.red, marginBottom: 16 }}>
+{product.stock > 0 ? ${product.stock} units available: "Currently out of stock"} </div> <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}> <div style={{ display: "flex", alignItems: "center", border:1px solid ${T.line}, borderRadius: 9 }}>
+setQty((q) => Math.max(1, q - 1))} style={{ background: "none", padding: "8px 12px" }}>
+{qty}
+setQty((q) => q + 1)} style={{ background: "none", padding: "8px 12px" }}>
+
+Total: {inr(qty * product.price)}
+
+onAdd(qty)}>Add to cart
+
+{related.length > 0 && (
+
+Related products
+
+
+{related.map((r) => (
+
+
+{r.name}
+
+{inr(r.price)}
+
+
+))}
+
+
+)}
+
+);
+}
+
+function CartView({ cart, updateQty, subtotal, tax, grand, dealer, onGoCatalog, onPlace }) {
+const [blocked, setBlocked] = useState(null);
+const [placing, setPlacing] = useState(false);
+const [confirmed, setConfirmed] = useState(false);
+
+function handlePlace() {
+setPlacing(true);
+setTimeout(() => {
+const result = onPlace();
+setPlacing(false);
+if (!result.withinLimit) setBlocked(result);
+else setConfirmed(true);
+}, 550); // simulated server round-trip
+}
+
+if (confirmed) {
+return (
+
+
+
+
+Order sent for approval
+
+
+BMW Ventures management has been notified. You'll get a notification once it's reviewed.
+
+
+
+);
+}
+
+if (cart.length === 0) {
+return ;
+}
+
+return (
+
+Your cart
+
+
+
+{cart.map((c, i) => (
+
+updateQty(c.id, c.qty - 1)} style={{ background: "none", padding: "5px 9px" }}>
+{c.qty}
+updateQty(c.id, c.qty + 1)} style={{ background: "none", padding: "5px 9px" }}>
+
+{inr(c.price * c.qty)}
+
+updateQty(c.id, 0)} style={{ background: "none", color: T.faint, padding: 4 }}>
+
+))}
+
+
+
+Order summary
+
+
+
+
+
+
+Available credit before this order: {inr(dealer.limit - dealer.out)}
+
+
+
+
+Continue shopping
+{placing ? "Checking credit…" : "Proceed to Order"}
+
+
+{blocked && setBlocked(null)} />}
+
+);
+}
+
+function Row({ label, value, bold }) {
+return (
+
+{label}
+{value}
+
+);
+}
+
+function CreditBlockedModal({ check, onClose }) {
+return (
+
+
+
+
+
+
+Your current outstanding balance and this order exceed your available credit limit.
+
+
+
+
+
+
+
+
+
+
+
+
+Edit cart
+Contact BMW Ventures
+
+
+);
+}
+
+const TIMELINE_STEPS = ["Pending Approval", "Approved", "Confirmed", "Dispatched", "Delivered"];
+function OrderDetailModal({ order, onClose }) {
+const dealer = DEALERS.find((d) => d.id === order.dealerId);
+const isTerminalBad = order.status === "Rejected" || order.status === "Blocked";
+const currentIdx = TIMELINE_STEPS.indexOf(order.status);
+
+return (
+
+
+
+{fmtDate(order.date)} · {dealer?.name}
+
+{inr(order.total)}
+
+
+
+
+
+{isTerminalBad ? (
+
+{order.status === "Rejected" ? Rejected — ${order.rejectionReason || "no reason provided"}: "Blocked by credit limit validation before reaching approval."} </div> ) : ( <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 22, position: "relative" }}> <div style={{ position: "absolute", top: 13, left: 20, right: 20, height: 2, background: T.line, zIndex: 0 }} /> <div style={{ position: "absolute", top: 13, left: 20, height: 2, background: T.green, zIndex: 0, width: ``${(Math.max(currentIdx, 0) / (TIMELINE_STEPS.length - 1)) * 88}% }} />
+{TIMELINE_STEPS.map((step, i) => (
+
+width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+background: i <= currentIdx ? T.green : "#fff", border: 2px solid ${i <= currentIdx ? T.green : T.line}`,
+}}>
+{i <= currentIdx && }
+
+{step}
+
+))}
+
+)}
+
+Items
+
+
+{order.items.map((it, i) => (
+
+
+{it.name}
+
+{it.sku} · Qty {it.qty} × {inr(it.unitPrice)}
+
+
+{inr(it.total)}
+
+
+))}
+
+
+
+
+{dealer &&
+Delivery address: {dealer.address}, {dealer.city}, {dealer.state} — {dealer.pincode}
+}
+
+);
+}
+
+function MyOrders({ orders, onOpen }) {
+const [filter, setFilter] = useState("All");
+const statuses = ["All", ...Object.keys(STATUS_META)];
+const filtered = filter === "All" ? orders : orders.filter((o) => o.status === filter);
+return (
+
+My orders
+
+
+
+{statuses.map((s) => (
+setFilter(s)} style={{
+padding: "7px 13px", borderRadius: 20, fontSize: 12.8, fontWeight: 600, whiteSpace: "nowrap",
+background: filter === s ? T.ink : "#fff", color: filter === s ? "#fff" : T.muted, border: 1px solid ${filter === s ? T.ink : T.line}`,
+}}>{s}
+))}
+
+{filtered.length === 0 ? : (
+
+{filtered.map((o) => (
+
+onOpen(o)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+
+{o.id}
+
+{fmtDate(o.date)} · {o.items.length} item{o.items.length > 1 ? "s" : ""}
+
+
+
+{inr(o.total)}
+
+
+
+
+
+))}
+
+)}
+
+);
+}
+
+function LedgerView({ dealer, entries }) {
+return (
+
+
+Account & statement
+
+
+alert("Generating PDF statement — this connects to the statement service in production.")}>Download statement
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{entries.map((e, i) => (
+
+
+
+
+
+
+
+))}
+
+Date	Description	Debit	Credit	Balance
+{fmtDate(e.date)}	{e.desc}	{e.debit ? inr(e.debit) : "—"}	{e.credit ? inr(e.credit) : "—"}	{inr(e.balance)}
+
+
+
+
+);
+}
+
+function DealerProfile({ dealer }) {
+const rows = [
+["Dealer ID", dealer.code], ["Business name", dealer.name], ["Owner / contact", dealer.contact],
+["Phone", dealer.phone], ["Email", dealer.email], ["GST number", dealer.gst],
+["Billing address", ${dealer.address}, ${dealer.city}, ${dealer.state} — ${dealer.pincode}],
+["Status", dealer.status],
+];
+return (
+
+Profile
+
+
+
+{rows.map(([k, v], i) => (
+
+{k}{v}
+
+))}
+
+
+
+Financial details are only visible to your authorized account users and BMW Ventures management.
+
+
+);
+}
+
+function AboutBMW() {
+const sections = [
+{ title: "About Us", body: "BMW Ventures is a national distributor of automotive spares and consumables, supplying an established network of dealers across seven states." },
+{ title: "Our Experience", body: "Over two decades in auto-parts distribution, built on long-term dealer relationships and consistent supply reliability." },
+{ title: "Products", body: "Lubricants, filters, brake systems, electricals, body parts and accessories across passenger and commercial vehicle segments." },
+{ title: "Brands / Partners", body: "Authorized distribution partner for leading lubricant, filtration and electrical component manufacturers." },
+{ title: "Top Products", body: "Synthetic-grade engine oils and filter sets remain the highest-moving categories across the dealer network." },
+{ title: "Our Network", body: "Active dealer presence across Maharashtra, Tamil Nadu, Gujarat, West Bengal and Uttar Pradesh, with regional warehousing." },
+];
+return (
+
+About BMW Ventures
+
+
+
+{sections.map((s) => (
+
+{s.title}
+
+{s.body}
+
+
+))}
+
+
+Contact Us
+
+
++91 22 4000 1200
+dealers@bmwventures.in
+BMW Ventures House, MIDC, Pune, Maharashtra
+
+
+
+);
+}
+
+/* =========================================================================
+ADMIN APP
+========================================================================= */
+function AdminApp({ store, dispatch, onLogout }) {
+const [tab, setTab] = useState("dashboard");
+const [showNotif, setShowNotif] = useState(false);
+const [dealerFocus, setDealerFocus] = useState(null);
+const [orderFocus, setOrderFocus] = useState(null);
+
+const adminNotifs = store.notifications.filter((n) => n.audience === "admin");
+const pendingApprovals = store.orders.filter((o) => o.status === "Pending Approval");
+
+const navItems = [
+{ key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+{ key: "approvals", label: "Approvals", icon: Clock, badge: pendingApprovals.length || null },
+{ key: "orders", label: "Orders", icon: ClipboardList },
+{ key: "dealers", label: "Dealers", icon: Users },
+{ key: "products", label: "Products", icon: Package },
+{ key: "analytics", label: "Analytics", icon: BarChart3 },
+];
+
+function handleNav(key) { if (key === "__logout") return onLogout(); setTab(key); setDealerFocus(null); }
+
+return (
+headerRight={
+
+
+BMW Ventures Admin
+
+Management console
+
+
+setShowNotif(true)} />
+
+}>
+{showNotif && setShowNotif(false)} onMarkRead={(id) => dispatch({ type: "MARK_READ", id })} />}
+{orderFocus && d.id === orderFocus.dealerId)} onClose={() => setOrderFocus(null)} dispatch={dispatch} />}
+
+{tab === "dashboard" && }
+{tab === "approvals" && }
+{tab === "orders" && }
+{tab === "dealers" && !dealerFocus && }
+{tab === "dealers" && dealerFocus && o.dealerId === dealerFocus.id)} ledger={store.ledger[dealerFocus.id] || []} onBack={() => setDealerFocus(null)} />}
+{tab === "products" && }
+{tab === "analytics" && }
+
+);
+}
+
+function AdminDashboard({ store, onOpenOrder }) {
+const { dealers, orders } = store;
+const today = new Date().toDateString();
+const todaysOrders = orders.filter((o) => new Date(o.date).toDateString() === today);
+const todaysSales = orders.filter((o) => new Date(o.date).toDateString() === today && o.status !== "Rejected").reduce((s, o) => s + o.total, 0);
+const totalOutstanding = dealers.reduce((s, d) => s + d.out, 0);
+const creditExposurePct = Math.round((totalOutstanding / dealers.reduce((s, d) => s + d.limit, 0)) * 100);
+const pending = orders.filter((o) => o.status === "Pending Approval");
+const recent = orders.slice(0, 6);
+
+return (
+
+Overview
+
+
+
+
+d.status === "Active").length} accent={T.green} icon={CheckCircle2} />
+
+
+
+
+
+
+
+
+
+{o.id}
+{DEALERS.find(d => d.id === o.dealerId)?.name}
+{inr(o.total)}
+
+
+))}
+
+
+
+
+
+);
+}
+
+function ApprovalsQueue({ orders, dealers, onOpen }) {
+return (
+
+Approvals queue
+
+
+{orders.length === 0 ? : (
+
+{orders.map((o) => {
+const d = dealers.find((x) => x.id === o.dealerId);
+const check = serverSideCreditCheck(d, o.total);
+return (
+
+
+
+{o.id} · {d.name}
+
+{d.code} · {fmtDate(o.date)} · {o.items.length} items
+
+
+{inr(o.total)}
+
+
+
+Outstanding: {inr(d.out)}
+Credit limit: {inr(d.limit)}
+Available: = o.total ? T.green : T.red }}>{inr(check.availableCredit)}
+
+onOpen(o)}>Review order
+
+);
+})}
+
+)}
+
+);
+}
+
+function AdminOrderModal({ order, dealer, onClose, dispatch }) {
+const [reason, setReason] = useState("");
+const [showReject, setShowReject] = useState(false);
+const check = serverSideCreditCheck(dealer, order.total);
+const canProgress = ["Approved", "Confirmed", "Dispatched"].includes(order.status);
+const nextLabel = { Approved: "Mark Confirmed", Confirmed: "Mark Dispatched", Dispatched: "Mark Delivered" }[order.status];
+
+return (
+
+
+
+{dealer.name}
+
+{dealer.code} · {fmtDate(order.date)} · {dealer.city}, {dealer.state}
+
+
+
+
+
+
+{order.items.map((it, i) => (
+
+{it.name} × {it.qty}
+{inr(it.total)}
+
+))}
+
+
+
+Credit position at time of order
+
+
+
+
+
+
+
+{order.status === "Pending Approval" && !showReject && (
+
+setShowReject(true)}>Reject
+{ dispatch({ type: "APPROVE_ORDER", orderId: order.id }); onClose(); }}>Approve
+
+)}
+{showReject && (
+
+
