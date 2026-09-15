@@ -10,7 +10,7 @@ int main() {
     cout << "Next character: " << next << endl;
 
     char lower = 'a';
-    char upper = lower - 32; // 'A'
+    char upper = lower - 32; 
     cout << "Lowercase: " << lower << endl; 
     return 0; 
 
